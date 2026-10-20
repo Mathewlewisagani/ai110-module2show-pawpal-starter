@@ -119,7 +119,7 @@ Sorting/filtering cost O(n log n)/O(n). Conflict detection and incremental gap f
 
 ## Sample Output
 
-Actual output of `python main.py` (including priority ordering and time blocking):
+Actual output of `python main.py`. The separate mixed-priority example places a 10:00 high-priority appointment before an 08:00 low-priority play task, while the two high-priority tasks remain ordered by time:
 
 ```text
 PawPal+ | Jordan | 2026-10-20
@@ -135,10 +135,10 @@ Time    Pet        Task                     Mins  Priority Status
 Priority order | high, medium, low; then due time
 Time    Pet        Task                     Mins  Priority Status
 --------------------------------------------------------------------------
-08:00   Mochi      Breakfast                  10  high     Pending
-08:00   Biscuit    Morning walk               30  high     Pending
-09:00   Biscuit    Grooming                   20  medium   Pending
-10:00   Mochi      Enrichment play            25  low      Pending
+09:00   Biscuit    Morning walk               30  high     Pending
+10:00   Mochi      Vet appointment            30  high     Pending
+09:30   Biscuit    Grooming                   20  medium   Pending
+08:00   Mochi      Play                       20  low      Pending
 
 Biscuit's pending tasks
 Time    Pet        Task                     Mins  Priority Status
@@ -222,8 +222,8 @@ python -m pytest -q
 Actual concise test output from this implementation:
 
 ```text
-........................................................                 [100%]
-56 passed in 1.32s
+.........................................................                [100%]
+57 passed in 1.35s
 ```
 
 The suite covers the four classes, aggregation across pets, completion, chronological and priority ordering, combined filters, recurrence and duplicate completion, overlapping/adjacent/midnight tasks, atomic edits, invalid data, empty schedules, duplicate IDs, slot fitting and care-window boundaries, overdue/future/completed behavior, JSON round trips and malformed backups. Additional tests verify automatic storage across new UI sessions, persistence errors, and both independent model responses using identical recurrence checks. Streamlit AppTest exercises real form submissions and session reruns for adding/editing/completing tasks, filtering, sample replacement confirmation, plan generation and preferences. `python main.py` is an independent end-to-end CLI demonstration.

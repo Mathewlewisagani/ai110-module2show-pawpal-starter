@@ -34,7 +34,14 @@ def main():
     scheduler = Scheduler(owner)
     print(f"PawPal+ | {owner.name} | {day.isoformat()}")
     print_schedule("Today's Schedule", scheduler.sort_by_time(day))
-    print_schedule("Priority order | high, medium, low; then due time", scheduler.sort_by_priority(day))
+    priority_owner = Owner("Jordan", [
+        Pet("Mochi", "cat", [Task("Play", day, "08:00", 20, "low"),
+                             Task("Vet appointment", day, "10:00", 30, "high")]),
+        Pet("Biscuit", "dog", [Task("Morning walk", day, "09:00", 30, "high"),
+                               Task("Grooming", day, "09:30", 20, "medium")]),
+    ])
+    print_schedule("Priority order | high, medium, low; then due time",
+                   Scheduler(priority_owner).sort_by_priority(day))
     print_schedule("Biscuit's pending tasks", scheduler.sort_by_time(day, "Biscuit", False))
     for warning in scheduler.detect_conflicts(day):
         print(f"WARNING: {warning}")

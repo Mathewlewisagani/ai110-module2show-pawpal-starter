@@ -46,7 +46,7 @@ Streamlit tests exercise adding a pet, creating and editing a recurring task, co
 
 ### b. Confidence
 
-My confidence rating for the current scope is 4/5. All 56 tests pass locally, and GitHub checks pass on Python 3.11 and 3.12. That gives good coverage of a small household using local calendar times. The next areas to test would be larger households, very large imports, keyboard-only navigation, and behavior across more browsers.
+My confidence rating for the current scope is 4/5. All 57 tests pass locally, and GitHub checks pass on Python 3.11 and 3.12. That gives good coverage of a small household using local calendar times. The next areas to test would be larger households, very large imports, keyboard-only navigation, and behavior across more browsers.
 
 ## 5. Reflection
 

@@ -220,3 +220,14 @@ def test_recurrence_date_overflow_does_not_partly_complete_task():
     with pytest.raises(OverflowError):
         task.mark_complete()
     assert not task.completed
+
+
+
+def test_priority_overrides_clock_time_and_uses_time_within_each_level():
+    tasks = [Task("Low early", DAY, "08:00", priority="low"),
+             Task("High later", DAY, "10:00", priority="high"),
+             Task("High earlier", DAY, "09:00", priority="high"),
+             Task("Medium", DAY, "08:30", priority="medium")]
+    scheduler = Scheduler(Owner("Jordan", [Pet("Mochi", "cat", tasks)]))
+    assert [task.description for _, task in scheduler.sort_by_priority(DAY)] == [
+        "High earlier", "High later", "Medium", "Low early"]
