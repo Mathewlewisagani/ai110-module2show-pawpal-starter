@@ -2,13 +2,21 @@
 
 Verified on 20 October 2026 (America/New_York).
 
-- Application/test checkpoint: `c47e33f04afd30f61ac3bc383157db567e468e93`.
-- Local Python 3.12: **41 pytest tests passed**, dependency check passed, CLI demo completed.
-- [GitHub Actions run 39510515861](https://github.com/Mathewlewisagani/ai110-module2show-pawpal-starter/actions/runs/39510515861): **success**, including both Python **3.11** and **3.12** jobs. Each job installs requirements, checks dependencies, runs the full test suite, and executes `main.py`.
-- Repository verified through GitHub: public fork of `codepath/ai110-module2show-pawpal-starter`; `main` tracks this fork, with the source retained as `upstream`.
-- Real local browser: sample household contains two pets and four tasks; the 08:00 overlap warning appears; the priority plan moves Morning walk to 08:10 and explicitly defers Enrichment play beyond the window.
-- Real browser persistence walkthrough: downloaded the sample household JSON, uploaded that same file, checked the replacement confirmation, restored successfully, and verified the returned two-pet/four-task household. The screenshot below captures the restore confirmation and restored schedule.
-- The screenshot contains synthetic sample data. Visual review used the actual local Streamlit application; it is not a mockup or a full browser/accessibility certification.
-- This final verification record and screenshot are documentation-only changes after the tested application checkpoint.
+## Current challenge-completion checkpoint
 
-![Restored sample household in the real PawPal app](pawpal-preview.png)
+- Application/test checkpoint: `ecf5382e28bd24213722fc6217a715cba6ff7453`.
+- Local Python 3.12: **57 pytest tests passed**; CLI demo completed.
+- [GitHub Actions run 39512246810](https://github.com/Mathewlewisagani/ai110-module2show-pawpal-starter/actions/runs/39512246810): **success on Python 3.11 and 3.12**, including dependency checks, all 57 tests, and the CLI demo.
+- Challenge 1: next-available-slot planning is implemented; the Agent Workflow log explicitly identifies the requested task, files, completed work, and corrections/refinements.
+- Challenge 2: UI changes save automatically to local `data.json`; a fresh application session reloads the saved household. Tests verify completion history survives and invalid files are not overwritten.
+- Challenge 3: the CLI now uses a deliberately mixed-time example. High-priority tasks at 09:00 and 10:00 precede a medium-priority 09:30 task and a low-priority 08:00 task.
+- Challenge 4: README names the CLI formatting function, Python field-width formatting, Streamlit components, status colors, and theme configuration.
+- Challenge 5: two independent model responses are retained under `comparisons/`; the same six cases pass for each model (**12 comparison checks**). The log contains the shared prompt, model names, response analysis, limitations, and final choice.
+
+## Earlier browser verification
+
+The original UI checkpoint was inspected in the real local browser: two sample pets, four tasks, an overlap warning, a conflict-free suggested plan, and successful JSON download/upload restoration. That baseline passed 41 tests and [its GitHub run](https://github.com/Mathewlewisagani/ai110-module2show-pawpal-starter/actions/runs/39510515861). The later automatic local-save behavior is covered by the new fresh-session and failure-handling tests.
+
+The image below is the earlier browser snapshot, before automatic local-save wording was added. It contains synthetic household data.
+
+![Earlier browser verification of sample-household restoration](pawpal-preview.png)

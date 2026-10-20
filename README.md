@@ -234,9 +234,7 @@ GitHub Actions runs dependency checks, pytest and the CLI demo on each push/PR. 
 
 ## Verified application
 
-[GitHub checks passed on Python 3.11 and 3.12](https://github.com/Mathewlewisagani/ai110-module2show-pawpal-starter/actions/runs/39510515861). See [the verification record](docs/verification.md) for the tested commit, real browser checks, and backup restore walkthrough.
-
-![PawPal dashboard after restoring the sample household](docs/pawpal-preview.png)
+[GitHub checks passed on Python 3.11 and 3.12](https://github.com/Mathewlewisagani/ai110-module2show-pawpal-starter/actions/runs/39512246810). See [the verification record](docs/verification.md) for the tested commit, real browser checks, and backup restore walkthrough.
 
 ## Project deliverables
 
