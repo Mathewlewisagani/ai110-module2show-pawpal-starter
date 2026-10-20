@@ -1,6 +1,6 @@
 # 🐾 PawPal+
 
-A small care planner for a busy household: track every pet, see what is due, and make room for the most important tasks.
+A pet care app for tracking tasks and planning time across multiple pets.
 
 Built for CodePath AI110 Project 2 from the [official starter](https://github.com/codepath/ai110-module2show-pawpal-starter). This repository is a fork with incremental design, backend, scheduling, interface, and verification commits.
 
@@ -111,11 +111,11 @@ classDiagram
 
 ### Planning rules and tradeoffs
 
-The care window runs from the owner's preferred start for the specified number of minutes, clipped at midnight. The window is elapsed time, including gaps between activities. Requested times are **earliest starts**, not hard deadlines. Overdue tasks may start at the beginning of the selected day's window. Future and completed tasks are excluded. Priority takes precedence over maximizing task count. The greedy algorithm is predictable, not a global optimizer.
+The care window starts at the owner's chosen time and ends after the chosen number of minutes, or at midnight. High-priority tasks get slots first. Requested times are earliest starts, not deadlines. Pending overdue tasks are included; future and completed tasks are not.
 
-Plans contain suggested task copies and explanations; they never overwrite original requested times. Conflict warnings describe the original task schedule, so they can still appear alongside a conflict-free suggested plan. One caregiver is assumed. Times are naive local calendar values: time zones, DST, travel, multiple caregivers and strict timing constraints are outside scope.
+The plan is a suggestion and does not change saved task times. Conflicts describe the original schedule, so a warning can still appear beside a suggested plan that avoids the overlap. The app assumes one caregiver and local times. It does not handle travel, time zones, or multiple caregivers.
 
-Sorting/filtering cost O(n log n)/O(n). Conflict detection and incremental gap fitting are O(n²) in the worst case, appropriate for a small household. Data validation rejects blank names/descriptions, malformed times, invalid durations and frequencies, duplicate pet names and duplicate imported task IDs.
+The greedy planner is simple but does not always find the best possible combination of tasks. Inputs are checked for blank names, invalid times and durations, duplicate pet names, and duplicate imported task IDs.
 
 ## Sample Output
 
@@ -228,7 +228,7 @@ Actual concise test output from this implementation:
 
 The suite covers the four classes, aggregation across pets, completion, chronological and priority ordering, combined filters, recurrence and duplicate completion, overlapping/adjacent/midnight tasks, atomic edits, invalid data, empty schedules, duplicate IDs, slot fitting and care-window boundaries, overdue/future/completed behavior, JSON round trips and malformed backups. Additional tests verify automatic storage across new UI sessions, persistence errors, and both independent model responses using identical recurrence checks. Streamlit AppTest exercises real form submissions and session reruns for adding/editing/completing tasks, filtering, sample replacement confirmation, plan generation and preferences. `python main.py` is an independent end-to-end CLI demonstration.
 
-**Confidence level: ★★★★☆ (4/5)** within the documented small-household scope. Automated Streamlit tests are not full browser accessibility tests. The real browser UI was also inspected; further testing should cover very large imports, multiple browsers, keyboard-only operation and richer scheduling rules.
+**Confidence level: ★★★★☆ (4/5).** The tests cover the main behaviors. More testing could cover large imports, more browsers, and keyboard-only use.
 
 GitHub Actions runs dependency checks, pytest and the CLI demo on each push/PR. [`reflection.md`](reflection.md) covers design decisions, tradeoffs, and AI-assisted development; [`ai_interactions.md`](ai_interactions.md) summarizes the development workflow and useful refinements.
 
@@ -238,4 +238,4 @@ GitHub Actions runs dependency checks, pytest and the CLI demo on each push/PR. 
 
 ## Project deliverables
 
-The project includes: four OOP classes, draft/final Mermaid source, multi-pet algorithms, a CLI demo with readable captured output, tests, integrated UI, README and reflection. Additional implemented features are priority time-blocking, next-slot search, JSON persistence and formatted UI/CLI output.
+Included: four classes, draft and final UML, multi-pet scheduling, a CLI demo, tests, Streamlit UI, and reflection. The extra features are next-slot planning, priority scheduling, JSON persistence, formatted output, and a two-model comparison.
