@@ -163,3 +163,60 @@ def test_json_rejects_duplicate_task_ids_across_pets():
     data["owner"]["pets"][1]["tasks"][0]["id"] = data["owner"]["pets"][0]["tasks"][0]["id"]
     with pytest.raises(ValueError):
         Owner.from_json(json.dumps(data))
+
+
+def test_priority_sort_is_high_then_medium_then_low_across_pets():
+    pairs = Scheduler(build_demo(DAY)).sort_by_priority(DAY)
+    assert [task.priority for _, task in pairs] == ["high", "high", "medium", "low"]
+    assert {pet.name for pet, _ in pairs} == {"Mochi", "Biscuit"}
+
+
+def test_next_slot_uses_gap_and_skips_overlapping_busy_intervals():
+    from datetime import datetime
+    start = datetime(2026, 10, 20, 8)
+    end = start + timedelta(hours=2)
+    busy = [(start + timedelta(minutes=50), start + timedelta(minutes=70)),
+            (start, start + timedelta(minutes=20)),
+            (start + timedelta(minutes=10), start + timedelta(minutes=30))]
+    assert Scheduler.next_available_slot(start, 20, busy, end) == start + timedelta(minutes=30)
+    assert Scheduler.next_available_slot(start, 51, busy, end) is None
+
+
+def test_unknown_and_completed_tasks_cannot_be_edited():
+    owner = build_demo(DAY)
+    scheduler = Scheduler(owner)
+    with pytest.raises(ValueError, match="not found"):
+        scheduler.mark_task_complete("missing")
+    with pytest.raises(ValueError, match="not found"):
+        scheduler.update_task("missing", time="09:00")
+    task = owner.pets[0].tasks[0]
+    scheduler.mark_task_complete(task.id)
+    with pytest.raises(ValueError, match="read-only"):
+        scheduler.update_task(task.id, time="09:00")
+
+
+def test_duplicate_occurrences_are_rejected():
+    from dataclasses import replace
+    task = Task("Walk", DAY, "08:00")
+    pet = Pet("Biscuit", "dog", [task])
+    with pytest.raises(ValueError):
+        pet.add_task(task)
+    owner = Owner("Jordan", [pet])
+    with pytest.raises(ValueError):
+        owner.add_pet(Pet("Mochi", "cat", [replace(task)]))
+
+
+@pytest.mark.parametrize("changes", [{"name": " "}, {"preferred_start": "9:00"},
+    {"available_minutes": 0}, {"available_minutes": True}])
+def test_owner_validation(changes):
+    values = {"name": "Jordan"}
+    values.update(changes)
+    with pytest.raises(ValueError):
+        Owner(**values)
+
+
+def test_recurrence_date_overflow_does_not_partly_complete_task():
+    task = Task("Care", date.max, "08:00", frequency="daily")
+    with pytest.raises(OverflowError):
+        task.mark_complete()
+    assert not task.completed

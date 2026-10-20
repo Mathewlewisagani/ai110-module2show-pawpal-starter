@@ -97,7 +97,7 @@ with schedule_tab:
         st.info("No tasks match this view. Add a pet and a task, or load the sample household.")
     for pet, task in visible:
         with st.container(border=True):
-            detail, action = st.columns([4, 1])
+            detail, action = st.columns([3, 1.2])
             with detail:
                 st.markdown(f"**{task.time} · {task.description}**")
                 st.caption(f"{pet.name} · {task.duration_minutes} min · {task.priority.title()} priority · {task.frequency.title()}")

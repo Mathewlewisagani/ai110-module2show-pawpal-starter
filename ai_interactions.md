@@ -1,40 +1,23 @@
 # AI Interactions Log
 
-> **Stretch features only.** Only fill in the sections that apply to stretch features you attempted. If you did not attempt a stretch feature, leave its section blank or delete it. This file is not required for the core project.
-
----
-
 ## Agent Workflow (SF7)
 
-> Document your experience using an AI agent (e.g., Cursor Agent, Claude, Copilot) to make multi-step changes autonomously.
+**Task given to the agent**
 
-**What task did you give the agent?**
+The user asked: “work on this project fully pushing the changes to my github incrementally. if a repo does not exist the instructions show where to fork the repo from”. The PDF supplied the project requirements. Earlier user requests authorized cloning the starter and installing its requirements.
 
-<!-- Describe the goal you asked the agent to accomplish -->
+**Work completed by Codex**
 
-**What did the agent do?**
+- Read the offline brief and starter files, checked the authenticated GitHub account, created a fork under `Mathewlewisagani`, and kept the CodePath source as `upstream`.
+- Drafted `diagrams/uml_draft.mmd` and class skeletons in `pawpal_system.py` as the first checkpoint.
+- Implemented the four domain classes, multi-pet sorting/filtering/conflicts, completion and recurrence, plus the reproducible `main.py` demo.
+- Added `Scheduler.next_available_slot()` and `build_plan()` for priority-based time blocking, with JSON backup/restore methods on `Owner`.
+- Connected `app.py` to the domain model, stored the owner in `st.session_state`, and added native Streamlit forms, warnings, filters, task edits, recurrence completion, preferences, and backup controls.
+- Wrote backend tests and Streamlit AppTest scenarios, ran the CLI and test suite, reviewed the actual browser interface, and added a GitHub Actions workflow.
+- Updated `README.md`, `reflection.md`, `diagrams/uml_final.mmd`, the matching `diagrams/uml.mmd`, `.streamlit/config.toml`, `.gitignore`, and a dependency snapshot.
 
-<!-- List the steps the agent took (files edited, commands run, etc.) -->
+**Corrections and verification**
 
-**What did you have to verify or fix manually?**
+The first fork command included a combination of CLI options that GitHub CLI rejected. Codex corrected the command and verified that GitHub returned the new fork URL. No code defect is represented as a manual student correction. Agent design checks chose idempotent recurrence, date-aware duration conflicts, atomic edits, explicit import replacement confirmation, and non-mutating suggested plans. Tests exercise those decisions; the README records actual demo and test output.
 
-<!-- Describe anything the agent got wrong or that required human review -->
-
----
-
-## Prompt Comparison (SF11)
-
-> Compare two different prompts (or two different models) on the same task.
-
-| | Option A | Option B |
-|-|----------|----------|
-| **Model / tool used** | | |
-| **Prompt** | | |
-| **Response summary** | | |
-| **What was useful** | | |
-| **Problems noticed** | | |
-| **Decision** | | |
-
-**Which approach did you use in your final implementation and why?**
-
-<!-- Your conclusion -->
+No second AI model or separate prompt-comparison experiment was used. No SF11 model-comparison claim is made. The student has not yet provided a manual review or a personal reflection in this conversation.

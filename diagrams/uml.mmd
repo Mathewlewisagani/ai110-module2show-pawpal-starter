@@ -1,15 +1,48 @@
 classDiagram
-    %% Replace the placeholders below with your actual classes, attributes, methods, and relationships.
-    %% Keep this file updated so it matches your final implementation.
-
-    class ClassName {
-        +type attribute
-        +method() returnType
+    class Owner {
+        +str name
+        +list~Pet~ pets
+        +str preferred_start
+        +int available_minutes
+        +add_pet(pet)
+        +get_all_tasks() list
+        +to_json() str
+        +from_json(content) Owner$
+        +save_to_json(path)
+        +load_from_json(path) Owner$
     }
-
-    class AnotherClass {
-        +type attribute
-        +method() returnType
+    class Pet {
+        +str name
+        +str species
+        +list~Task~ tasks
+        +add_task(task)
+        +list_tasks() list
     }
-
-    ClassName --> AnotherClass : relationship
+    class Task {
+        +str id
+        +str description
+        +date due_date
+        +str time
+        +int duration_minutes
+        +str priority
+        +str frequency
+        +bool completed
+        +datetime starts_at
+        +datetime ends_at
+        +mark_complete() Task
+    }
+    class Scheduler {
+        +Owner owner
+        +filter_tasks(pet_name, completed, day) list
+        +sort_by_time(day, pet_name, completed) list
+        +sort_by_priority(day) list
+        +mark_task_complete(task_id) Task
+        +update_task(task_id, changes) Task
+        +detect_conflicts(day) list
+        +next_available_slot(start, duration_minutes, busy, end) datetime$
+        +build_plan(day) dict
+    }
+    Owner "1" *-- "0..*" Pet : cares for
+    Pet "1" *-- "0..*" Task : stores occurrences
+    Scheduler --> Owner : get_all_tasks
+    Scheduler ..> Task : completes and plans
