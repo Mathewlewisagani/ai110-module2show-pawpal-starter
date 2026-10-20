@@ -37,6 +37,10 @@ def main():
     print_schedule("Biscuit's pending tasks", scheduler.sort_by_time(day, "Biscuit", False))
     for warning in scheduler.detect_conflicts(day):
         print(f"WARNING: {warning}")
+    plan = scheduler.build_plan(day)
+    print_schedule("Priority plan | 08:00–10:00 | no overlapping care", [(pet, task) for pet, task, _ in plan["scheduled"]])
+    for pet, task, reason in plan["deferred"]:
+        print(f"DEFERRED: {pet.name}: {task.description}. {reason}")
     breakfast = next(task for _, task in owner.get_all_tasks() if task.description == "Breakfast")
     following = scheduler.mark_task_complete(breakfast.id)
     print(f"\nCompleted Breakfast; next daily occurrence: {following.due_date} {following.time}.")

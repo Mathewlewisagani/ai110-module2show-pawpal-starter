@@ -98,3 +98,68 @@ def test_empty_owner_and_duplicate_pet_names():
     owner.add_pet(Pet("Mochi", "cat"))
     with pytest.raises(ValueError):
         owner.add_pet(Pet("mochi", "cat"))
+
+
+def test_priority_plan_avoids_overlaps_and_preserves_source_tasks():
+    owner = build_demo(DAY)
+    original_times = [task.time for _, task in owner.get_all_tasks()]
+    plan = Scheduler(owner).build_plan(DAY)
+    assert [task.time for _, task, _ in plan["scheduled"]] == ["08:00", "08:10", "09:00"]
+    assert [task.description for _, task, _ in plan["deferred"]] == ["Enrichment play"]
+    assert [task.time for _, task in owner.get_all_tasks()] == original_times
+    scheduled = [task for _, task, _ in plan["scheduled"]]
+    assert all(a.ends_at <= b.starts_at for a, b in zip(scheduled, scheduled[1:]))
+
+
+def test_plan_prioritizes_high_tasks_when_time_is_limited():
+    low = Task("Play", DAY, "08:00", 30, "low")
+    high = Task("Medication", DAY, "08:00", 30, "high")
+    owner = Owner("Jordan", [Pet("Mochi", "cat", [low]), Pet("Biscuit", "dog", [high])], available_minutes=30)
+    plan = Scheduler(owner).build_plan(DAY)
+    assert plan["scheduled"][0][1].id == high.id
+    assert plan["deferred"][0][1].id == low.id
+
+
+def test_plan_includes_overdue_but_excludes_completed_and_future_tasks():
+    tasks = [Task("Overdue", DAY - timedelta(days=1), "15:00"),
+             Task("Future", DAY + timedelta(days=1), "08:00"),
+             Task("Completed", DAY, "08:00", completed=True)]
+    plan = Scheduler(Owner("Jordan", [Pet("Mochi", "cat", tasks)])).build_plan(DAY)
+    assert len(plan["scheduled"]) == 1
+    assert plan["scheduled"][0][1].time == "08:00"
+    assert "Overdue" in plan["scheduled"][0][2]
+
+
+def test_plan_clips_at_midnight_and_accepts_exact_window_fit():
+    tasks = [Task("Fits", DAY, "23:30", 30, "high"), Task("Too long", DAY, "23:30", 31)]
+    plan = Scheduler(Owner("Jordan", [Pet("Mochi", "cat", tasks)], "23:30", 120)).build_plan(DAY)
+    assert len(plan["scheduled"]) == 1
+    assert len(plan["deferred"]) == 1
+    assert plan["scheduled"][0][1].ends_at == plan["end"]
+
+
+def test_json_round_trip_preserves_ids_dates_completion_and_preferences(tmp_path):
+    owner = build_demo(DAY)
+    Scheduler(owner).mark_task_complete(owner.pets[0].tasks[1].id)
+    path = tmp_path / "data.json"
+    owner.save_to_json(path)
+    restored = Owner.load_from_json(path)
+    assert restored == owner
+    assert restored is not owner
+    assert Scheduler(restored).detect_conflicts(DAY) == Scheduler(owner).detect_conflicts(DAY)
+
+
+@pytest.mark.parametrize("content", ['not json', '{}', '[]', '{"version": 7, "owner": {}}',
+    '{"version": 1, "owner": {"name": "Jordan", "pets": [{"name": "M", "species": "cat", "tasks": [{"due_date": "bad"}]}]}}'])
+def test_bad_backups_are_rejected(content):
+    with pytest.raises(ValueError, match="Invalid PawPal backup"):
+        Owner.from_json(content)
+
+
+def test_json_rejects_duplicate_task_ids_across_pets():
+    import json
+    owner = build_demo(DAY)
+    data = json.loads(owner.to_json())
+    data["owner"]["pets"][1]["tasks"][0]["id"] = data["owner"]["pets"][0]["tasks"][0]["id"]
+    with pytest.raises(ValueError):
+        Owner.from_json(json.dumps(data))

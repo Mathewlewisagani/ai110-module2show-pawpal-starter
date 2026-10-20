@@ -1,8 +1,10 @@
 """Pet care domain objects and scheduling rules, independent of Streamlit."""
-from dataclasses import dataclass, field, replace
+from dataclasses import asdict, dataclass, field, replace
 from datetime import date, datetime, timedelta
 from uuid import uuid4
 import re
+import json
+from pathlib import Path
 
 PRIORITIES = {"high": 0, "medium": 1, "low": 2}
 FREQUENCIES = {"once": 0, "daily": 1, "weekly": 7}
@@ -128,6 +130,45 @@ class Owner:
         return [(pet, task) for pet in self.pets for task in pet.tasks]
 
 
+    def to_json(self):
+        """Serialize a versioned backup, including IDs, dates, and preferences."""
+        return json.dumps({"version": 1, "owner": asdict(self)},
+                          default=lambda value: value.isoformat(), indent=2)
+
+    @classmethod
+    def from_json(cls, content):
+        """Validate an entire backup before returning a replacement owner."""
+        try:
+            data = json.loads(content)
+            if data["version"] != 1:
+                raise ValueError("Unsupported backup version.")
+            values = dict(data["owner"])
+            pets = []
+            for raw_pet in values.pop("pets"):
+                raw_pet = dict(raw_pet)
+                tasks = []
+                for raw_task in raw_pet.pop("tasks"):
+                    raw_task = dict(raw_task)
+                    raw_task["due_date"] = date.fromisoformat(raw_task["due_date"])
+                    tasks.append(Task(**raw_task))
+                pets.append(Pet(**raw_pet, tasks=tasks))
+            return cls(**values, pets=pets)
+        except (ValueError, TypeError, KeyError, AttributeError, OverflowError) as error:
+            raise ValueError("Invalid PawPal backup. Use an unmodified version 1 JSON export.") from error
+
+    def save_to_json(self, path):
+        """Save a backup atomically so interrupted writes preserve the old file."""
+        path = Path(path)
+        temporary = path.with_name(path.name + ".tmp")
+        temporary.write_text(self.to_json(), encoding="utf-8")
+        temporary.replace(path)
+
+    @classmethod
+    def load_from_json(cls, path):
+        """Restore saved pets and tasks without depending on Streamlit."""
+        return cls.from_json(Path(path).read_text(encoding="utf-8"))
+
+
 @dataclass
 class Scheduler:
     """Organize one owner's complete collection of care tasks."""
@@ -189,3 +230,39 @@ class Scheduler:
                 warnings.append(f"{task.due_date.isoformat()} {task.time} {pet.name}: {task.description} overlaps "
                                 f"{other.due_date.isoformat()} {other.time} {other_pet.name}: {other.description}.")
         return warnings
+
+    @staticmethod
+    def next_available_slot(start, duration_minutes, busy, end):
+        """Find the first fitting gap in sorted, half-open time intervals."""
+        candidate = start
+        duration = timedelta(minutes=duration_minutes)
+        for occupied_start, occupied_end in sorted(busy):
+            if candidate + duration <= occupied_start:
+                break
+            if candidate < occupied_end:
+                candidate = occupied_end
+        return candidate if candidate + duration <= end else None
+
+    def build_plan(self, day):
+        """Greedily time-block pending due/overdue tasks by priority, then time."""
+        start = datetime.combine(day, datetime.strptime(self.owner.preferred_start, "%H:%M").time())
+        midnight = datetime.combine(day + timedelta(days=1), datetime.min.time())
+        end = min(start + timedelta(minutes=self.owner.available_minutes), midnight)
+        candidates = [(pet, task) for pet, task in self.owner.get_all_tasks()
+                      if not task.completed and task.due_date <= day]
+        candidates.sort(key=lambda pair: (PRIORITIES[pair[1].priority], pair[1].starts_at))
+        busy, scheduled, deferred = [], [], []
+        for pet, task in candidates:
+            earliest = max(start, task.starts_at) if task.due_date == day else start
+            slot = self.next_available_slot(earliest, task.duration_minutes, busy, end)
+            if slot is None:
+                deferred.append((pet, task, "No remaining slot in the care window."))
+                continue
+            planned = replace(task, due_date=day, time=slot.strftime("%H:%M"))
+            busy.append((slot, planned.ends_at))
+            reason = f"{task.priority.capitalize()} priority; earliest available slot at or after the requested time."
+            if task.due_date < day:
+                reason = f"Overdue from {task.due_date}; {reason[0].lower() + reason[1:]}"
+            scheduled.append((pet, planned, reason))
+        scheduled.sort(key=lambda item: item[1].starts_at)
+        return {"scheduled": scheduled, "deferred": deferred, "start": start, "end": end}
