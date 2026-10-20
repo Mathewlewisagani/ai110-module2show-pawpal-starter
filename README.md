@@ -200,6 +200,12 @@ The suite covers the four classes, aggregation across pets, completion, chronolo
 
 GitHub Actions runs dependency checks, pytest and the CLI demo on each push/PR. [`reflection.md`](reflection.md) records design choices and honest AI collaboration details; [`ai_interactions.md`](ai_interactions.md) documents the agent workflow. No second-model or prompt-comparison bonus is claimed.
 
+## Verified application
+
+[GitHub checks passed on Python 3.11 and 3.12](https://github.com/Mathewlewisagani/ai110-module2show-pawpal-starter/actions/runs/39510515861). See [the verification record](docs/verification.md) for the tested commit, real browser checks, and backup restore walkthrough.
+
+![PawPal dashboard after restoring the sample household](docs/pawpal-preview.png)
+
 ## Project deliverables
 
 All core rubric deliverables are included: four OOP classes, draft/final Mermaid source, multi-pet algorithms, a CLI demo with readable captured output, tests, integrated UI, README and reflection. Additional implemented features are priority time-blocking, next-slot search, JSON persistence and formatted UI/CLI output. Course submission is performed by the student through the course site; this project does not submit itself.
