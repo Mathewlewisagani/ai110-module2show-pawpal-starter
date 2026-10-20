@@ -46,7 +46,7 @@ Streamlit tests exercise adding a pet, creating and editing a recurring task, co
 
 ### b. Confidence
 
-My confidence rating for the current scope is 4/5. All 41 tests pass locally, and GitHub checks pass on Python 3.11 and 3.12. That gives good coverage of a small household using local calendar times. The next areas to test would be larger households, very large imports, keyboard-only navigation, and behavior across more browsers.
+My confidence rating for the current scope is 4/5. All 56 tests pass locally, and GitHub checks pass on Python 3.11 and 3.12. That gives good coverage of a small household using local calendar times. The next areas to test would be larger households, very large imports, keyboard-only navigation, and behavior across more browsers.
 
 ## 5. Reflection
 
@@ -56,7 +56,7 @@ The strongest part of the project is the separation between the domain model and
 
 ### b. What could improve
 
-In another iteration, I would add hard deadlines, support for multiple caregivers, and optional grouping of activities that can happen together. I would also explore a better optimization strategy when several tasks compete for a short care window. The current backup system is deliberately simple; a larger application would benefit from authenticated accounts and persistent storage.
+In another iteration, I would add hard deadlines, support for multiple caregivers, and optional grouping of activities that can happen together. I would also explore a better optimization strategy when several tasks compete for a short care window. The current JSON storage is deliberately simple and local to one household; a larger application would benefit from authenticated accounts and a database.
 
 ### c. Key takeaway
 

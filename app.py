@@ -1,19 +1,32 @@
 """Streamlit interface; all care rules live in pawpal_system.py."""
 from datetime import date, datetime
+from pathlib import Path
+import os
 import streamlit as st
 from pawpal_system import Owner, Pet, Task, Scheduler, PRIORITIES, FREQUENCIES
 from main import build_demo
 
 st.set_page_config(page_title="PawPal+ · A little care, every day", page_icon="🐾", layout="wide")
 
+DATA_PATH = Path(os.environ.get("PAWPAL_DATA_FILE", str(Path(__file__).with_name("data.json"))))
 if "owner" not in st.session_state:
-    st.session_state.owner = Owner("Jordan")
+    try:
+        st.session_state.owner = Owner.load_from_json(DATA_PATH) if DATA_PATH.exists() else Owner("Jordan")
+    except (ValueError, OSError) as error:
+        st.error(f"Could not load the saved household: {error}")
+        st.info("Your saved file has not been changed. Repair it or move it aside before restarting PawPal.")
+        st.stop()
 if "notice" in st.session_state:
     st.success(st.session_state.pop("notice"))
 
 
 def refresh(message):
-    """Keep an action's confirmation visible after the next Streamlit rerun."""
+    """Persist every household change before displaying its confirmation."""
+    try:
+        st.session_state.owner.save_to_json(DATA_PATH)
+    except OSError as error:
+        st.error(f"Changes are in memory, but could not be saved to this computer: {error}")
+        return
     st.session_state.notice = message
     st.rerun()
 
@@ -70,7 +83,7 @@ with st.sidebar:
             st.session_state.pop("confirm_sample", None)
             st.rerun()
     st.divider()
-    st.caption("Your household stays in this browser session. Use Backup to save it between visits.")
+    st.caption("Changes save automatically on this computer. Use Backup to keep an extra copy.")
 
 st.title("Care for every member of the pack.")
 st.write(f"{owner.name}'s household · {selected_day.strftime('%A, %B %d')}")
@@ -174,7 +187,7 @@ with manage_tab:
 
 with backup_tab:
     st.subheader("Keep your household close")
-    st.write("Download a JSON backup to restore your pets, care history, and preferences on another visit. Nothing is uploaded to a shared household database.")
+    st.write("Your household is saved automatically on this computer. Download a JSON backup to keep another copy or move your pets, care history, and preferences to another computer.")
     st.download_button("Download household backup", owner.to_json(), "pawpal-household.json", "application/json")
     uploaded = st.file_uploader("Restore a PawPal JSON backup", type=["json"])
     replace_confirmed = st.checkbox("Replace my current household with this backup")

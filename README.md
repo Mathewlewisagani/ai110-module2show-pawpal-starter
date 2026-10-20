@@ -11,7 +11,7 @@ Built for CodePath AI110 Project 2 from the [official starter](https://github.co
 - Warn about overlapping activities across all pets, including midnight spillovers.
 - Complete one-time, daily, or weekly tasks; recurring completion creates exactly one next occurrence.
 - Generate an explained, priority-first plan inside a chosen care window; view deferred tasks that do not fit.
-- Download/restore a versioned JSON household backup or save/load the same data from Python.
+- Automatically save pets and tasks to local `data.json` between runs, with downloadable JSON backups as an extra copy.
 - Try a sample two-pet household in one click.
 
 ## Setup and run
@@ -40,7 +40,7 @@ No API key or paid service is required. `main.py` uses a fixed demonstration dat
 | `Owner` | Household and care-window preferences; `get_all_tasks()` aggregates every pet's tasks; JSON backup/restore. |
 | `Scheduler` | Reads the Owner aggregation, filters/sorts, completes/edits occurrences, detects conflicts, and builds plans. |
 
-The domain lives in `pawpal_system.py` without Streamlit imports. `main.py` and `app.py` share it. The owner is stored in `st.session_state` so normal UI reruns preserve the household. Stable task IDs distinguish tasks with identical descriptions.
+The domain lives in `pawpal_system.py` without Streamlit imports. `main.py` and `app.py` share it. The owner is stored in `st.session_state` during UI reruns and automatically saved to `data.json` after changes; fresh sessions restore it from disk. Stable task IDs distinguish tasks with identical descriptions.
 
 Draft: [`diagrams/uml_draft.mmd`](diagrams/uml_draft.mmd). Final: [`diagrams/uml_final.mmd`](diagrams/uml_final.mmd). `diagrams/uml.mmd` is an identical convenient copy of the final diagram.
 
@@ -119,12 +119,20 @@ Sorting/filtering cost O(n log n)/O(n). Conflict detection and incremental gap f
 
 ## Sample Output
 
-Actual output of `python main.py`:
+Actual output of `python main.py` (including priority ordering and time blocking):
 
 ```text
 PawPal+ | Jordan | 2026-10-20
 
 Today's Schedule
+Time    Pet        Task                     Mins  Priority Status
+--------------------------------------------------------------------------
+08:00   Mochi      Breakfast                  10  high     Pending
+08:00   Biscuit    Morning walk               30  high     Pending
+09:00   Biscuit    Grooming                   20  medium   Pending
+10:00   Mochi      Enrichment play            25  low      Pending
+
+Priority order | high, medium, low; then due time
 Time    Pet        Task                     Mins  Priority Status
 --------------------------------------------------------------------------
 08:00   Mochi      Breakfast                  10  high     Pending
@@ -159,11 +167,17 @@ Completed Breakfast; next daily occurrence: 2026-10-21 08:00.
 5. Click **Complete** beside Breakfast. The current occurrence becomes completed and a pending breakfast for the following day is added. Change the schedule date to see it; use the Completed filter to see history.
 6. Open **Pets & tasks** to add a pet, create a task with a due date/time, duration, priority and repetition, or edit a pending task. Invalid submissions show inline errors.
 7. Save a different owner name, start time or window length in the sidebar; the pets and tasks remain intact.
-8. Open **Backup**, download your household JSON, and restore it on a future visit after checking **Replace my current household with this backup**.
+8. Open **Backup**, download an extra household backup, and restore it when needed after checking **Replace my current household with this backup**.
 
 ## Persistence
 
-The UI stores each household in its browser session, not a shared server file. A browser reload, new session, or server restart may lose that session's data. **Download a backup to keep your work between visits.** Restore validates the complete backup before replacing the current household. The UI accepts JSON backups smaller than 1 MB. Sample data is synthetic; exports can contain your entered household details.
+The app automatically saves each household change to **`data.json`** beside `app.py`, using `Owner.save_to_json()`. On startup or in a fresh browser session, it calls `Owner.load_from_json()` to restore pets, tasks, completion history, IDs, and preferences. Add a pet or task, stop Streamlit, restart it, and the household is still there. The local data file is excluded from Git.
+
+Serialization uses a custom dictionary conversion: `dataclasses.asdict()` converts the nested Owner/Pet/Task objects, dates become ISO strings, and `from_json()` rebuilds validated dataclasses and converts ISO dates back to `date` objects. A version field allows incompatible backups to be rejected. No additional serialization library is required.
+
+The **Backup** tab downloads an extra copy or restores a chosen backup after confirmation; successful restoration also updates `data.json`. Invalid saved data is not silently overwritten. A save failure is shown explicitly rather than reporting success. UI imports must be smaller than 1 MB.
+
+This is a single-household local app. All sessions connected to the same server use the same file; concurrent independent households require a database and account model. Tests use an isolated temporary path through `PAWPAL_DATA_FILE`, so they never overwrite the real household.
 
 For file persistence from Python:
 
@@ -177,7 +191,25 @@ restored = Owner.load_from_json("data.json")
 assert restored == owner
 ```
 
-`save_to_json()` writes to a temporary sibling then replaces the destination. Backups preserve date values, IDs, history, recurrence, pets and preferences. Invalid/unsupported backups raise `ValueError`. Implementation: `pawpal_system.py`; browser controls: `app.py`. User backups and local environments are excluded from Git.
+`save_to_json()` writes to a temporary sibling then replaces the destination. Backups preserve date values, IDs, history, recurrence, pets and preferences. Invalid/unsupported backups raise `ValueError`. Modified files: `pawpal_system.py` implements serialization and file methods; `app.py` loads on startup and saves each change; `tests/test_pawpal.py` and `tests/test_app.py` verify round trips, fresh-session restoration, and failure handling; `.gitignore` excludes saved household data. User backups and local environments are excluded from Git.
+
+## Professional UI and Output Formatting (Challenge 4)
+
+- `main.print_schedule()` uses Python f-string field widths to create aligned CLI columns for time, pet, task, duration, priority, and status. This provides structured tables without another dependency such as `tabulate`.
+- `app.py` uses Streamlit's `st.metric()` for household totals, `st.container(border=True)` for task cards, `st.dataframe()` for pet information, and `st.tabs()` to separate daily care, task management, and backups.
+- `st.success()`, `st.warning()`, and `st.error()` distinguish confirmations, conflicts/deferred tasks, and invalid input. Text labels carry the meaning as well as color.
+- The paw-print icon and `.streamlit/config.toml` provide consistent branding, a green primary color, cream background, and readable text.
+- CLI output for both priority ordering and conflict-free time blocking appears in **Sample Output** above; the screenshot is supplementary.
+
+## Challenge Checklist
+
+| Challenge | Implementation and evidence |
+| --- | --- |
+| 1. Advanced algorithm + Agent Workflow | `Scheduler.next_available_slot()` / `build_plan()`; explicit task, modified files, completed work, and corrections in `ai_interactions.md`. |
+| 2. Data persistence | `Owner.save_to_json()` / `load_from_json()`; app automatically saves/restores `data.json`; persistence workflow and modified files documented above. |
+| 3. Priority scheduling | `Task.priority` and `Scheduler.sort_by_priority()`; explicit high/medium/low ordering then due time in the CLI output above. |
+| 4. Professional output | Aligned CLI tables, Streamlit status colors/cards/metrics, and theme; functions and libraries documented above. |
+| 5. Two-model comparison | Independent GPT-6 Sol and GPT-6.1 Sol responses, shared prompt, usefulness/limits, identical tests, and final decision in `ai_interactions.md`; returned code retained in `comparisons/`. |
 
 ## Testing PawPal+
 
@@ -190,11 +222,11 @@ python -m pytest -q
 Actual concise test output from this implementation:
 
 ```text
-.........................................                                [100%]
-41 passed in 0.90s
+........................................................                 [100%]
+56 passed in 1.32s
 ```
 
-The suite covers the four classes, aggregation across pets, completion, chronological and priority ordering, combined filters, recurrence and duplicate completion, overlapping/adjacent/midnight tasks, atomic edits, invalid data, empty schedules, duplicate IDs, slot fitting and care-window boundaries, overdue/future/completed behavior, JSON round trips and malformed backups. Streamlit AppTest exercises real form submissions and session reruns for adding/editing/completing tasks, filtering, sample replacement confirmation, plan generation and preferences. `python main.py` is an independent end-to-end CLI demonstration.
+The suite covers the four classes, aggregation across pets, completion, chronological and priority ordering, combined filters, recurrence and duplicate completion, overlapping/adjacent/midnight tasks, atomic edits, invalid data, empty schedules, duplicate IDs, slot fitting and care-window boundaries, overdue/future/completed behavior, JSON round trips and malformed backups. Additional tests verify automatic storage across new UI sessions, persistence errors, and both independent model responses using identical recurrence checks. Streamlit AppTest exercises real form submissions and session reruns for adding/editing/completing tasks, filtering, sample replacement confirmation, plan generation and preferences. `python main.py` is an independent end-to-end CLI demonstration.
 
 **Confidence level: ★★★★☆ (4/5)** within the documented small-household scope. Automated Streamlit tests are not full browser accessibility tests. The real browser UI was also inspected; further testing should cover very large imports, multiple browsers, keyboard-only operation and richer scheduling rules.
 

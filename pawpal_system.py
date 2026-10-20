@@ -60,9 +60,15 @@ class Task:
         """Complete once and return the next recurrence, anchored to its due date."""
         if self.completed:
             return None
-        days = FREQUENCIES[self.frequency]
-        # Construct first so an unrepresentable next date cannot partly complete a task.
-        following = replace(self, due_date=self.due_date + timedelta(days=days), id=uuid4().hex) if days else None
+        if self.frequency == "once":
+            self.completed = True
+            return None
+        intervals = {"daily": 1, "weekly": 7}
+        if self.frequency not in intervals:
+            raise ValueError(f"Unsupported frequency: {self.frequency!r}")
+        # Prepare the successor before mutating history: failures leave it incomplete.
+        following = replace(self, due_date=self.due_date + timedelta(days=intervals[self.frequency]),
+                            id=uuid4().hex, completed=False)
         self.completed = True
         return following
 

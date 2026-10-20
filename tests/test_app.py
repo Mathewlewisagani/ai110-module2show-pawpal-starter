@@ -1,9 +1,18 @@
 """Drive Streamlit forms and reruns against the real domain objects."""
 from datetime import date
+import pytest
 from pathlib import Path
 from streamlit.testing.v1 import AppTest
 
 APP = Path(__file__).resolve().parents[1] / "app.py"
+
+
+@pytest.fixture(autouse=True)
+def saved_household(tmp_path, monkeypatch):
+    """Keep UI tests independent from the real local household file."""
+    path = tmp_path / "data.json"
+    monkeypatch.setenv("PAWPAL_DATA_FILE", str(path))
+    return path
 
 
 def app():
@@ -72,3 +81,37 @@ def test_sample_requires_confirmation_before_replacing_existing_household():
     button(at, "Keep my household").click().run()
     assert at.session_state.owner.name == "Keep me"
     assert not at.exception
+
+
+def test_household_persists_across_fresh_app_sessions(saved_household):
+    from pawpal_system import Owner
+    at = app()
+    button(at, "Load sample household").click().run()
+    assert saved_household.exists()
+    saved = Owner.load_from_json(saved_household)
+    fresh = app()
+    assert not fresh.exception
+    assert fresh.session_state.owner == saved
+    assert len(fresh.session_state.owner.pets) == 2
+    assert len(fresh.session_state.owner.get_all_tasks()) == 4
+    task = fresh.session_state.owner.pets[0].tasks[1]
+    fresh.button(key=f"complete_{task.id}").click().run()
+    restored = app()
+    assert len(restored.session_state.owner.get_all_tasks()) == 5
+    assert restored.session_state.owner.pets[0].tasks[1].completed
+
+
+def test_invalid_saved_file_is_not_overwritten(saved_household):
+    saved_household.write_text("broken data")
+    at = app()
+    assert any("Could not load" in error.value for error in at.error)
+    assert saved_household.read_text() == "broken data"
+
+
+def test_save_failure_is_visible_without_false_success(saved_household):
+    at = app()
+    saved_household.mkdir()
+    field(at.text_input, "Owner name").set_value("Alex")
+    button(at, "Save preferences").click().run()
+    assert any("could not be saved" in error.value for error in at.error)
+    assert not any("preferences saved" in item.value for item in at.success)
