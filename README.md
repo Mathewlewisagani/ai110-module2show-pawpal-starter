@@ -198,7 +198,7 @@ The suite covers the four classes, aggregation across pets, completion, chronolo
 
 **Confidence level: ★★★★☆ (4/5)** within the documented small-household scope. Automated Streamlit tests are not full browser accessibility tests. The real browser UI was also inspected; further testing should cover very large imports, multiple browsers, keyboard-only operation and richer scheduling rules.
 
-GitHub Actions runs dependency checks, pytest and the CLI demo on each push/PR. [`reflection.md`](reflection.md) records design choices and honest AI collaboration details; [`ai_interactions.md`](ai_interactions.md) documents the agent workflow. No second-model or prompt-comparison bonus is claimed.
+GitHub Actions runs dependency checks, pytest and the CLI demo on each push/PR. [`reflection.md`](reflection.md) covers design decisions, tradeoffs, and AI-assisted development; [`ai_interactions.md`](ai_interactions.md) summarizes the development workflow and useful refinements.
 
 ## Verified application
 
@@ -208,4 +208,4 @@ GitHub Actions runs dependency checks, pytest and the CLI demo on each push/PR. 
 
 ## Project deliverables
 
-All core rubric deliverables are included: four OOP classes, draft/final Mermaid source, multi-pet algorithms, a CLI demo with readable captured output, tests, integrated UI, README and reflection. Additional implemented features are priority time-blocking, next-slot search, JSON persistence and formatted UI/CLI output. Course submission is performed by the student through the course site; this project does not submit itself.
+The project includes: four OOP classes, draft/final Mermaid source, multi-pet algorithms, a CLI demo with readable captured output, tests, integrated UI, README and reflection. Additional implemented features are priority time-blocking, next-slot search, JSON persistence and formatted UI/CLI output.

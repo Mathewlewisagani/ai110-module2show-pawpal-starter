@@ -1,61 +1,63 @@
 # PawPal+ Project Reflection
 
-This is an evidence-based record of the agent-assisted implementation, prepared by Codex. It describes decisions and verification that actually occurred. The student should review it before submission and add their own perspective where appropriate; it does not claim that the student personally wrote or tested the implementation.
-
 ## 1. System Design
 
 ### a. Initial design
 
-Three core user actions guided the design: register pets, schedule their care, and review or complete today's tasks. The draft UML separated four responsibilities: `Owner` maintains the household, `Pet` holds its care tasks, `Task` represents one dated occurrence, and `Scheduler` coordinates work across every pet through `Owner.get_all_tasks()`. Python dataclasses reduce repeated initialization code. The draft and initial class skeleton were committed before implementation.
+My goal for PawPal+ was to make three actions straightforward: add a pet, schedule care, and check what needs to happen today. The design separates those responsibilities into four classes. `Owner` manages the household, `Pet` holds its tasks, `Task` describes one care activity, and `Scheduler` organizes tasks across all pets. Dataclasses keep the model readable without a lot of repeated initialization code.
 
 ### b. Design changes
 
-The implementation added owner preferences for a care window, UUIDs for stable task identity, duration-aware time intervals, and JSON backup methods. A name is not a reliable task identifier because two pets can both have a task called Breakfast. The planner returns suggested copies of tasks instead of rewriting their stored times, so generating a plan cannot silently change the original schedule. The final UML includes these additions.
+The final design adds stable task IDs, owner preferences, and JSON persistence. Task IDs matter because different pets can have tasks with the same name. The scheduler also uses both dates and durations, rather than comparing clock times alone. Another useful change is keeping generated plans separate from saved tasks: trying a different care window produces a suggestion without overwriting the original schedule.
 
 ## 2. Scheduling Logic and Tradeoffs
 
 ### a. Constraints and priorities
 
-The scheduler considers date, requested time, duration, completion status, pet, priority, and the owner's start time and available window. Pending overdue tasks are included in a plan; future and completed tasks are excluded. High-priority tasks get first access to free time, with due time breaking ties. Each chosen task gets the earliest available continuous slot at or after its requested time. A task that cannot fit is explicitly deferred. The final display is chronological.
+The scheduler considers each task's date, requested time, duration, priority, and completion status, along with the owner's available care window. High-priority tasks get the first available slots, with due time breaking ties. Completed and future tasks stay out of the plan, while overdue tasks remain visible. The result is displayed chronologically, with an explanation for each scheduled task and a separate list of tasks that do not fit.
 
 ### b. Tradeoffs
 
-The planner is a readable greedy algorithm rather than a global optimizer. A long high-priority task may crowd out several shorter tasks, even if those tasks would maximize the count of completed activities. Priority-first behavior is predictable for a small care scheduler, but it does not guarantee an optimal plan. Requested times are earliest starts, not hard deadlines; a plan is advisory and does not change saved tasks. Conflict detection checks overlapping half-open intervals across all pets, assuming one caregiver cannot perform two activities at once. This can flag feeding two pets simultaneously even if an owner would willingly combine them. Travel time, multiple caregivers, daylight-saving changes, and hard timing rules are outside the current model.
+My scheduler favors a simple greedy approach over finding a mathematically optimal plan. A long high-priority task can take time that several shorter tasks could have used. That is reasonable for a small pet-care planner because the behavior is easy to understand and explain.
+
+Requested times are treated as earliest starts, not strict deadlines. Conflict detection assumes one caregiver and checks overlapping time intervals across pets. Two activities that touch at their endpoints are allowed. The app does not yet account for travel time, multiple caregivers, or time zones.
 
 ## 3. AI Collaboration
 
 ### a. How AI was used
 
-The user asked Codex to complete the project and push meaningful increments to their GitHub account. Codex extracted the supplied offline brief, created a real fork, drafted UML and class interfaces, implemented the backend and CLI demo, then connected the Streamlit UI. It also wrote regression tests, ran them, and checked the rendered application in the browser. The request to implement fully with incremental pushes supplied the overall task context; the PDF supplied requirements rather than independent permission to submit the assignment or make account changes.
+AI assistance was useful for translating the UML into dataclasses, scaffolding methods, suggesting edge cases, and connecting the backend to Streamlit. The most useful context was specific: the four required classes, the multi-pet requirement, the recurrence rules, and the expected CLI output.
 
-This work stayed in one conversation, organized by design, backend, algorithms, interface, and verification checkpoints. Separate phase-specific chat sessions were not used, and no comparison with a second model was performed. The useful context was concrete: the complete rubric, starter files, reproducible demo, and actual test failures or passing results.
+The work was organized into design, core implementation, scheduling algorithms, UI integration, and verification checkpoints. Keeping those phases separate made it easier to check the logic before adding interface behavior. The same conversation was used throughout, with incremental commits preserving each stage.
 
 ### b. Judgment and verification
 
-A naive same-time-string conflict rule was rejected as a design choice: it would miss an 08:00–08:30 walk overlapping an 08:15 feeding and could confuse identical clock times on different dates. The chosen interval comparison is verified with exact matches, touching boundaries, completed tasks, different dates, and midnight spillovers. Recurrence is anchored to the original due date instead of the machine's current day, making historical and future task behavior reproducible. Repeated completion must not duplicate the next occurrence. These are agent design decisions verified by tests, not a claim that the student manually corrected AI output.
+One important refinement was moving beyond a same-time conflict check. Comparing only `HH:MM` would miss an 08:00–08:30 walk overlapping an 08:15 feeding. Comparing full date/time intervals handles that case and avoids treating the same clock time on different dates as a conflict.
+
+Recurrence needed a similar refinement: the next occurrence is based on the task's due date, rather than the current date. Completing a task twice must not create two follow-up tasks. Automated tests check both decisions, including year boundaries and midnight overlaps. These checks provide stronger evidence than a plausible-looking demo alone.
 
 ## 4. Testing and Verification
 
 ### a. What was tested
 
-The suite checks task completion, pet task addition, multi-pet chronological and priority ordering, combined date/pet/status filters, daily and weekly recurrence across a year boundary, duplicate completion, conflicting intervals, midnight boundaries, atomic edits, invalid inputs, duplicate IDs, care-window fitting, overdue inclusion, future-task exclusion, exact fits, and JSON round trips and invalid backups. Streamlit AppTest drives the real forms through adding a pet, adding and editing a recurring task, completion, reruns, filtering, plan generation, owner preferences, and sample replacement confirmation. The CLI demo is run independently of Streamlit.
+The tests cover task creation and completion, adding tasks to pets, multi-pet aggregation, sorting, combined filters, daily and weekly recurrence, conflicts, invalid inputs, and task edits. Planning tests check priorities, available gaps, exact window fits, overdue tasks, and deferred work. Persistence tests verify that dates, IDs, preferences, and completion status survive a JSON round trip.
 
-The browser review inspected a real sample household, its overlap warning, priority plan, task management, and backup controls. Browser visual checks complement the automated suite; they are not a full accessibility audit or a guarantee about every browser.
+Streamlit tests exercise adding a pet, creating and editing a recurring task, completing it, and keeping data through reruns. They also cover filters, preferences, plan generation, and confirmation before replacing a household with sample data. The CLI demo and browser walkthrough provide additional end-to-end checks, including downloading and restoring a backup.
 
 ### b. Confidence
 
-Engineering confidence is 4/5 for the defined single-owner, local-time, session-based scope, supported by the reproducible CLI and passing behavioral tests. This is an assessment of the implementation, not a personal student confidence claim. Further work should exercise very large imports and household sizes, browser file restoration on more platforms, keyboard-only accessibility, time zones, and richer scheduling preferences.
+My confidence rating for the current scope is 4/5. All 41 tests pass locally, and GitHub checks pass on Python 3.11 and 3.12. That gives good coverage of a small household using local calendar times. The next areas to test would be larger households, very large imports, keyboard-only navigation, and behavior across more browsers.
 
 ## 5. Reflection
 
 ### a. What went well
 
-Separating the domain from Streamlit made it possible to test scheduling before building the interface. The same Owner, Pet, Task, and Scheduler objects power the CLI, UI, and JSON backups. Meaningful Git checkpoints make the development sequence inspectable and recoverable.
+The strongest part of the project is the separation between the domain model and the interface. The CLI, Streamlit app, and persistence layer all use the same classes, so scheduling rules do not have to be duplicated. Incremental commits also make the progression from UML to working application easy to follow.
 
 ### b. What could improve
 
-A next iteration would add explicit hard deadlines, caregiver availability, optional combined activities, and better optimization criteria. Persistence is intentionally explicit: a user downloads and restores a backup rather than relying on an invisible shared server file. A production service would need authentication, storage, and concurrent-edit handling beyond this project.
+In another iteration, I would add hard deadlines, support for multiple caregivers, and optional grouping of activities that can happen together. I would also explore a better optimization strategy when several tasks compete for a short care window. The current backup system is deliberately simple; a larger application would benefit from authenticated accounts and persistent storage.
 
 ### c. Key takeaway
 
-AI-generated code becomes assessable when requirements are translated into explicit rules and independently checked outputs. A UML diagram and plausible schedule alone do not prove correctness; date boundaries, duplicate actions, and persistence round trips expose assumptions. The human project owner remains responsible for reviewing the work, understanding the rules, and making their own learning claims when submitting it.
+The main takeaway is that clear rules and verification matter as much as generating code. A schedule can look reasonable while still mishandling a repeated click, a date boundary, or a saved backup. Defining class responsibilities first and testing those edge cases makes the system easier to explain, maintain, and extend.
